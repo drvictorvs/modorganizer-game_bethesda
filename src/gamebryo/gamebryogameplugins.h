@@ -14,6 +14,8 @@ public:
   virtual void writePluginLists(const MOBase::IPluginList* pluginList) override;
   virtual void readPluginLists(MOBase::IPluginList* pluginList) override;
   virtual QStringList getLoadOrder() override;
+  virtual bool lightPluginsAreSupported() override;
+  virtual bool mediumPluginsAreSupported() override;
 
 protected:
   MOBase::IOrganizer* organizer() const { return m_Organizer; }
@@ -33,6 +35,9 @@ protected:
 private:
   void writeList(const MOBase::IPluginList* pluginList, const QString& filePath,
                  bool loadOrder);
+
+private:
+  std::map<QString, QByteArray> m_LastSaveHash;
 };
 
 #endif  // GAMEBRYOGAMEPLUGINS_H

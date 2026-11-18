@@ -1,20 +1,62 @@
-name: Build Game Bethesda Library
+name: Build game_starfield.dll for MO2 2.5.2
 
 on:
   push:
-    branches: [master]
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 env:
-  VCPKG_BINARY_SOURCES: ${{ vars.AZ_BLOB_VCPKG_URL != '' && format('clear;x-azblob,{0},{1},readwrite', vars.AZ_BLOB_VCPKG_URL, secrets.AZ_BLOB_SAS) || '' }}
+  MO2_VERSION: "2.5.2"
+  QT_VERSION: "6.7.1" # the Qt that ships with MO2 2.5.2
 
 jobs:
   build:
     runs-on: windows-2022
     steps:
-      - name: Build Game Bethesda
-        id: build-game-bethesda
-        uses: ModOrganizer2/build-with-mob-action@master
+      - uses: actions/checkout@v4
+
+      - name: Install Qt ${{ env.QT_VERSION }}
+        uses: jurplel/install-qt-action@v4
         with:
-          mo2-dependencies: uibase
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2019_64
+          archives: qtbase
+          cache: true
+
+      - name: Download the MO2 ${{ env.MO2_VERSION }} release
+        id: mo2
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v$env:MO2_VERSION" --repo ModOrganizer2/modorganizer `
+            --pattern "Mod.Organizer-$env:MO2_VERSION.7z" --dir deps
+          7z x "deps/Mod.Organizer-$env:MO2_VERSION.7z" -odeps/mo2 -y | Out-Null
+          $dir = (Get-ChildItem deps/mo2 -Recurse -Filter uibase.dll | Select-Object -First 1).DirectoryName
+          Write-Output "MO2 folder: $dir"
+          "dir=$($dir -replace '\\', '/')" >> $env:GITHUB_OUTPUT
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          python -m pip install --quiet pefile
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            "-DQT_ROOT=$env:QT_ROOT_DIR" `
+            "-DMO2_DIR=${{ steps.mo2.outputs.dir }}" `
+            "-DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/out"
+
+      - name: Build (includes the import check against MO2's DLLs)
+        shell: pwsh
+        run: |
+          cmake --build build --config RelWithDebInfo --parallel
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --install build --config RelWithDebInfo
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game_starfield-mo2-${{ env.MO2_VERSION }}-patched
+          path: |
+            out/plugins/game_starfield.dll
+            out/pdb/*.pdb
+            build/verify-report.txt
+          if-no-files-found: warn

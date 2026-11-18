@@ -44,8 +44,6 @@
 // internal
 #include <stack>
 
-#include <QString>
-
 // VS < 2015 has only partial C++11 support
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #ifndef CONSTEXPR
@@ -110,9 +108,22 @@ namespace vdf
       return w;
     }
 
-    inline std::string string_converter(const std::wstring& w)
+    // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
+    // from cppreference
+    template <class Facet>
+    struct deletable_facet : Facet
     {
-      return QString::fromStdWString(w).toStdString();
+      template <class... Args>
+      deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...)
+      {}
+      ~deletable_facet() {}
+    };
+
+    inline std::string string_converter(const std::wstring& w)  // todo: use us-locale
+    {
+      std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>>
+          conv1;
+      return conv1.to_bytes(w);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -622,7 +633,7 @@ namespace vdf
   template <typename IterT>
   inline auto read(IterT first, const IterT last, bool* ok,
                    const Options& opt = Options{}) NOEXCEPT
-      -> basic_object<typename std::iterator_traits<IterT>::value_type>
+      ->basic_object<typename std::iterator_traits<IterT>::value_type>
   {
     return read<basic_object<typename std::iterator_traits<IterT>::value_type>>(
         first, last, ok, opt);
@@ -631,7 +642,7 @@ namespace vdf
   template <typename IterT>
   inline auto read(IterT first, IterT last, std::error_code& ec,
                    const Options& opt = Options{}) NOEXCEPT
-      -> basic_object<typename std::iterator_traits<IterT>::value_type>
+      ->basic_object<typename std::iterator_traits<IterT>::value_type>
   {
     return read<basic_object<typename std::iterator_traits<IterT>::value_type>>(
         first, last, ec, opt);

@@ -17,6 +17,9 @@ protected:
   virtual QStringList readPluginList(MOBase::IPluginList* pluginList) override;
   virtual QStringList getLoadOrder() override;
   virtual bool lightPluginsAreSupported() override;
+
+private:
+  std::map<QString, QByteArray> m_LastSaveHash;
 };
 
 #endif  // CREATIONGAMEPLUGINS_H

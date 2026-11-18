@@ -100,7 +100,7 @@ void CreationGamePlugins::writePluginList(const IPluginList* pluginList,
                             "and rename them."));
   }
 
-  file->commit();
+  file.commitIfDifferent(m_LastSaveHash[filePath]);
 }
 
 QStringList CreationGamePlugins::readPluginList(MOBase::IPluginList* pluginList)
@@ -133,11 +133,12 @@ QStringList CreationGamePlugins::readPluginList(MOBase::IPluginList* pluginList)
   }
 
   QStringList pluginsFound;
-  const QByteArray contents = file.readAll();
-  for (const QByteArray& line : contents.split('\n')) {
+  while (!file.atEnd()) {
+    QByteArray line = file.readLine();
     QString pluginName;
     if ((line.size() > 0) && (line.at(0) != '#')) {
-      pluginName = QString::fromLocal8Bit(line).trimmed();
+      pluginName = QStringEncoder(QStringConverter::Encoding::System)
+                       .encode(line.trimmed().constData());
     }
     if (!primaryPlugins.contains(pluginName, Qt::CaseInsensitive)) {
       if (pluginName.startsWith('*')) {

@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/Fallout4VR">
-        <file alias="splash">splash.png</file>
-    </qresource>
-</RCC>

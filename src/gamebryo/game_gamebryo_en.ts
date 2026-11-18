@@ -137,8 +137,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="gamebryogameplugins.cpp" line="131"/>
-        <location filename="../creation/creationgameplugins.cpp" line="97"/>
+        <location filename="gamebryogameplugins.cpp" line="130"/>
         <source>Some of your plugins have invalid names! These plugins can not be loaded by the game. Please see mo_interface.log for a list of affected plugins and rename them.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -158,12 +157,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="gamegamebryo.cpp" line="333"/>
+        <location filename="gamegamebryo.cpp" line="318"/>
         <source>failed to query registry path (preflight): %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="gamegamebryo.cpp" line="341"/>
+        <location filename="gamegamebryo.cpp" line="326"/>
         <source>failed to query registry path (read): %1</source>
         <translation type="unfinished"></translation>
     </message>

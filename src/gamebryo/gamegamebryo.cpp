@@ -20,7 +20,6 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QJsonDocument>
-#include <QJsonValue>
 
 #include <QtDebug>
 #include <QtGlobal>
@@ -215,9 +214,9 @@ QString GameGamebryo::identifyGamePath() const
                         L"Installed Path");
 }
 
-bool GameGamebryo::prepareIni(const QString&)
+bool GameGamebryo::prepareIni(const QString& exec)
 {
-  auto profile = m_Organizer->profile();
+  MOBase::IProfile* profile = m_Organizer->profile();
 
   QString basePath = profile->localSettingsEnabled()
                          ? profile->absolutePath()
@@ -251,22 +250,8 @@ QString GameGamebryo::myGamesPath() const
 
 /*static*/ QString GameGamebryo::getLootPath()
 {
-  auto result = findInRegistry(
-      HKEY_CURRENT_USER,
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-"
-      "A657-0DCE38040374}_is1",
-      L"InstallLocation");
-
-  if (result.isEmpty())
-    result = findInRegistry(
-        HKEY_LOCAL_MACHINE,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-"
-        "A657-0DCE38040374}_is1",
-        L"InstallLocation");
-
-  if (result.isEmpty())
-    result = findInRegistry(HKEY_LOCAL_MACHINE, L"Software\\LOOT", L"Installed Path");
-  return result + "/Loot.exe";
+  return findInRegistry(HKEY_LOCAL_MACHINE, L"Software\\LOOT", L"Installed Path") +
+         "/Loot.exe";
 }
 
 QString GameGamebryo::localAppFolder()
@@ -349,7 +334,7 @@ QString GameGamebryo::findInRegistry(HKEY baseKey, LPCWSTR path, LPCWSTR value)
   std::unique_ptr<BYTE[]> buffer =
       getRegValue(baseKey, path, value, RRF_RT_REG_SZ | RRF_NOEXPAND);
 
-  return QString::fromUtf16(reinterpret_cast<const char16_t*>(buffer.get()));
+  return QString::fromUtf16(reinterpret_cast<const ushort*>(buffer.get()));
 }
 
 QString GameGamebryo::getKnownFolderPath(REFKNOWNFOLDERID folderId, bool useDefault)

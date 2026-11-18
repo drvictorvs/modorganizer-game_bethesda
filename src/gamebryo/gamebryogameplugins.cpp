@@ -9,7 +9,6 @@
 
 #include <QDateTime>
 #include <QDir>
-#include <QHash>
 #include <QString>
 #include <QStringEncoder>
 #include <QStringList>
@@ -138,7 +137,7 @@ void GamebryoGamePlugins::writeList(const IPluginList* pluginList,
     qWarning("plugin list would be empty, this is almost certainly wrong. Not "
              "saving.");
   } else {
-    file->commit();
+    file.commitIfDifferent(m_LastSaveHash[filePath]);
   }
 }
 
@@ -184,20 +183,22 @@ QStringList GamebryoGamePlugins::readPluginList(MOBase::IPluginList* pluginList)
   }
 
   // Always use filetime loadorder to get the actual load order
-  QHash<QString, QDateTime> modificationTimes;
-  modificationTimes.reserve(plugins.size());
-  for (const auto& pluginName : plugins) {
-    MOBase::IModInterface* mod =
-        organizer()->modList()->getMod(pluginList->origin(pluginName));
-    QDir dir = mod ? mod->absolutePath() : organizer()->managedGame()->dataDirectory();
-    QString absPath = dir.absoluteFilePath(pluginName);
-    modificationTimes.insert(pluginName, QFileInfo(absPath).lastModified());
-  }
-
-  std::ranges::sort(
-      plugins, [&modificationTimes](const QString& lhs, const QString& rhs) {
-        return modificationTimes.value(lhs) < modificationTimes.value(rhs);
-      });
+  std::sort(plugins.begin(), plugins.end(),
+            [&](const QString& lhs, const QString& rhs) {
+              MOBase::IModInterface* lhm =
+                  organizer()->modList()->getMod(pluginList->origin(lhs));
+              MOBase::IModInterface* rhm =
+                  organizer()->modList()->getMod(pluginList->origin(rhs));
+              QDir lhd = organizer()->managedGame()->dataDirectory();
+              QDir rhd = organizer()->managedGame()->dataDirectory();
+              if (lhm != nullptr)
+                lhd = lhm->absolutePath();
+              if (rhm != nullptr)
+                rhd = rhm->absolutePath();
+              QString lhp = lhd.absoluteFilePath(lhs);
+              QString rhp = rhd.absoluteFilePath(rhs);
+              return QFileInfo(lhp).lastModified() < QFileInfo(rhp).lastModified();
+            });
 
   // Determine plugin active state by the plugins.txt file.
   bool pluginsTxtExists = true;
@@ -217,12 +218,14 @@ QStringList GamebryoGamePlugins::readPluginList(MOBase::IPluginList* pluginList)
   }
 
   QStringList activePlugins;
+  QStringList inactivePlugins;
   if (pluginsTxtExists) {
-    const QByteArray contents = file.readAll();
-    for (const QByteArray& line : contents.split('\n')) {
+    while (!file.atEnd()) {
+      QByteArray line = file.readLine();
       QString pluginName;
       if ((line.size() > 0) && (line.at(0) != '#')) {
-        pluginName = QString::fromLocal8Bit(line).trimmed();
+        QStringEncoder encoder(QStringConverter::Encoding::System);
+        pluginName = encoder.encode(line.trimmed().constData());
       }
       if (pluginName.size() > 0) {
         pluginList->setState(pluginName, IPluginList::STATE_ACTIVE);
@@ -242,4 +245,14 @@ QStringList GamebryoGamePlugins::readPluginList(MOBase::IPluginList* pluginList)
   }
 
   return primary + plugins;
+}
+
+bool GamebryoGamePlugins::lightPluginsAreSupported()
+{
+  return false;
+}
+
+bool GamebryoGamePlugins::mediumPluginsAreSupported()
+{
+  return false;
 }
