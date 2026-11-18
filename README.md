@@ -10,8 +10,8 @@ This build of MO2's Starfield game plugin checks the first line of the profile's
 file was rewritten by Starfield), every plugin that physically exists in the game
 installation's `Data` folder is ticked again, and MO2 writes the corrected file
 straight away. Plugins from mods and in-game Creations (which live in
-`Documents\My Games\Starfield\Data`) are left as they are, as are
-`BlueprintShips-*` files.
+`Documents\My Games\Starfield\Data`) are left as they are. `BlueprintShips-*`
+sidecars are also re-enabled when their matching main plugin is active.
 
 The behaviour can be switched off in *Settings → Plugins → Starfield Support Plugin →
 reenable_vanilla_plugins*. Unticking a vanilla plugin by hand in MO2 still works; it
